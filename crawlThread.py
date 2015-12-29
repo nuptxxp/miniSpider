@@ -20,10 +20,12 @@ class CrawlThread(object):
             self.init()
         except:
             return
-        while not self.queue.empty():
-            url = self.queue.get(block=1, timeout=5)
-            self.queue.task_done()
-            time.sleep(self.crawlInterval)
+        while True:
+            if not self.queue.empty():
+                url = self.queue.get(block=1, timeout=5)
+                print 'url: ' + url
+                self.queue.task_done()
+                time.sleep(self.crawlInterval)
 
 
 
