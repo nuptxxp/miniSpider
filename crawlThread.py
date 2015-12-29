@@ -22,7 +22,6 @@ class CrawlThread(object):
             return
         while not self.queue.empty():
             url = self.queue.get(block=1, timeout=5)
-            print 'url: ' + url
             self.queue.task_done()
             time.sleep(self.crawlInterval)
 

@@ -48,13 +48,14 @@ class MiniSpider(object):
             threadCnt = 1
         for i in range(threadCnt):
             t = threading.Thread(target = self.crawlThread.run)
+            t.setDaemon(True)
             self.threadList.append(t)
 
         for thread in self.threadList:
             thread.start()
+        
+        self.queue.join()
 
-        for thread in self.threadList:
-            thread.join()
 
 if __name__ == '__main__':
     argParser = argparse.ArgumentParser(description="miniSpider") 
