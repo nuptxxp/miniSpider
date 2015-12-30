@@ -8,7 +8,12 @@ import ConfigParser
 import Queue
 import threading
 import argparse
+import logging
+import time
+
 import crawlThread
+import urlTable
+import log
 
 VERSION = '1.0'
 
@@ -17,6 +22,7 @@ class MiniSpider(object):
         self.config = ConfigParser.ConfigParser()
         self.seedList = []
         self.queue = Queue.Queue()
+        self.urlTable = urlTable.UrlTable()
         self.crawlThread = None
         self.threadList = []
         self.confName = confName
@@ -25,7 +31,9 @@ class MiniSpider(object):
         self.config.read(self.confName)
         self.seedList = self.loadSeed()
         self.queue = self.loadQueue()
-        self.crawlThread = crawlThread.CrawlThread(config = self.config, queue = self.queue)
+        self.crawlThread = crawlThread.CrawlThread(config = self.config, queue = self.queue,
+                urlTable = self.urlTable)
+        logging.info('init conf success')
 
     def loadSeed(self):
         seedList = []
@@ -38,21 +46,44 @@ class MiniSpider(object):
     def loadQueue(self):
         q = Queue.Queue()
         for seed in self.seedList:
-            q.put(seed, 1)
+            q.put((seed, 1), 1)
         return q
+
+    def stop(self):
+        while not self.queue.empty():
+            self.queue.get()
+            self.queue.task_done()
+
+    def monitor(self):
+        while True:
+            deadThread = 0
+            for thread, threadName in self.threadList:
+                if not thread.isAlive():
+                    logging.warning(threadName + ' not alive')
+                    deadThread += 1
+            if deadThread == len(self.threadList):
+                logging.warning('all thread not alive, exit')
+                self.stop()
+            time.sleep(10)
 
     def run(self):
         try:
             threadCnt = self.config.getint('spider', 'thread_count')
         except:
             threadCnt = 1
+        logging.info('start multi thread of ' + str(threadCnt))
         for i in range(threadCnt):
-            t = threading.Thread(target = self.crawlThread.run)
+            threadName = 'thread-' + str(i)
+            t = threading.Thread(target = self.crawlThread.run, args = [threadName], name = threadName)
             t.setDaemon(True)
-            self.threadList.append(t)
+            self.threadList.append((t, threadName))
 
-        for thread in self.threadList:
+        for thread, threadName in self.threadList:
             thread.start()
+
+        monitorThread = threading.Thread(target = self.monitor)
+        monitorThread.setDaemon(True)
+        monitorThread.start()
         
         self.queue.join()
 
@@ -69,6 +100,7 @@ if __name__ == '__main__':
     if not args.conf:
         argParser.print_help()
         sys.exit(1)
+    log.init_log('./log/miniSpider')
     spider = MiniSpider(args.conf)
     try:
         spider.init()
