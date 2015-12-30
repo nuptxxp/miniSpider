@@ -56,6 +56,7 @@ class MiniSpider(object):
         for thread in self.threadList:
             thread.join()
 
+
 if __name__ == '__main__':
     argParser = argparse.ArgumentParser(description="miniSpider") 
     argParser.add_argument('-v', '--verbose', help='display current version', action='store_true')
