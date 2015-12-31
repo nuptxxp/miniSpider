@@ -4,6 +4,7 @@
 # email  : pengxiangxiong@baidu.com
 
 from bs4 import BeautifulSoup
+import logging
 
 class WebPageParse(object):
     def __init__(self):
@@ -19,7 +20,7 @@ class WebPageParse(object):
             if aEle.has_attr('href'):
                 urlList.append(aEle['href'])
             else:
-                print aEle
+                logging.warning('unexpected link found' + str(aEle))
         return urlList
 
 
